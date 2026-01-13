@@ -1,0 +1,1930 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Loop Studio - Learn For Loops Through Music</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --amber: #ff9500;
+            --amber-glow: #ffb340;
+            --amber-dark: #cc7700;
+            --panel-bg: rgba(20, 18, 22, 0.85);
+            --panel-border: rgba(255, 149, 0, 0.2);
+            --glass-bg: rgba(30, 28, 35, 0.75);
+            --text-primary: #f5f5f5;
+            --text-secondary: #a0a0a0;
+            --code-bg: #1a1a2e;
+            --success: #4ade80;
+            --error: #f87171;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: #0a0a0c;
+            color: var(--text-primary);
+            overflow: hidden;
+            height: 100vh;
+            cursor: crosshair;
+        }
+
+        #canvas-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        /* Crosshair */
+        .crosshair {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 20px;
+            height: 20px;
+            z-index: 100;
+            pointer-events: none;
+            opacity: 0.6;
+        }
+
+        .crosshair::before,
+        .crosshair::after {
+            content: '';
+            position: absolute;
+            background: var(--amber);
+            border-radius: 1px;
+        }
+
+        .crosshair::before {
+            width: 2px;
+            height: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .crosshair::after {
+            width: 20px;
+            height: 2px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        /* UI Overlay */
+        .ui-overlay {
+            position: fixed;
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        .ui-overlay > * {
+            pointer-events: auto;
+        }
+
+        /* Header */
+        .header {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 20;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 1.4rem;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--amber);
+            text-shadow: 0 0 20px rgba(255, 149, 0, 0.5);
+        }
+
+        .header p {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin-top: 4px;
+            letter-spacing: 0.05em;
+        }
+
+        /* Panels */
+        .panel {
+            background: var(--panel-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--panel-border);
+            border-radius: 12px;
+            box-shadow: 
+                0 20px 60px rgba(0, 0, 0, 0.5),
+                inset 0 1px 0 rgba(255, 255, 255, 0.05);
+        }
+
+        .panel-header {
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--panel-border);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .panel-header h3 {
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-secondary);
+        }
+
+        .panel-header .dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--amber);
+            box-shadow: 0 0 8px var(--amber);
+        }
+
+        /* Block Palette */
+        .block-palette {
+            position: fixed;
+            left: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 200px;
+            z-index: 20;
+        }
+
+        .block-palette .panel-content {
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .block-palette .panel-content::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .block-palette .panel-content::-webkit-scrollbar-thumb {
+            background: var(--amber-dark);
+            border-radius: 2px;
+        }
+
+        /* Blocks */
+        .block {
+            padding: 10px 12px;
+            border-radius: 8px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            font-weight: 600;
+            cursor: grab;
+            transition: all 0.2s ease;
+            user-select: none;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .block::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, transparent 50%);
+            pointer-events: none;
+        }
+
+        .block:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .block:active {
+            cursor: grabbing;
+        }
+
+        .block.loop {
+            background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+            border: 1px solid #818cf8;
+        }
+
+        .block.action {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            border: 1px solid #fbbf24;
+            color: #1a1a1a;
+        }
+
+        .block.conditional {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            border: 1px solid #34d399;
+        }
+
+        .block.modifier {
+            background: linear-gradient(135deg, #ec4899 0%, #db2777 100%);
+            border: 1px solid #f472b6;
+        }
+
+        .block.wait {
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+            border: 1px solid #a78bfa;
+        }
+
+        .block-category {
+            font-size: 0.6rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-secondary);
+            margin-top: 8px;
+            margin-bottom: 4px;
+            padding-left: 4px;
+        }
+
+        .block-category:first-child {
+            margin-top: 0;
+        }
+
+        /* Workspace */
+        .workspace {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 600px;
+            z-index: 20;
+        }
+
+        .workspace-content {
+            padding: 16px;
+            min-height: 180px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .workspace-content.drag-over {
+            background: rgba(255, 149, 0, 0.1);
+            border: 2px dashed var(--amber);
+            border-radius: 8px;
+        }
+
+        .workspace-block {
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .workspace-block .remove-btn {
+            position: absolute;
+            right: -8px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--error);
+            border: none;
+            color: white;
+            font-size: 12px;
+            cursor: pointer;
+            opacity: 0;
+            transition: opacity 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .workspace-block:hover .remove-btn {
+            opacity: 1;
+        }
+
+        .workspace-block .block {
+            flex: 1;
+        }
+
+        .workspace-block.nested {
+            margin-left: 24px;
+            padding-left: 12px;
+            border-left: 3px solid rgba(99, 102, 241, 0.5);
+        }
+
+        .workspace-empty {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 120px;
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+            gap: 8px;
+        }
+
+        .workspace-empty svg {
+            opacity: 0.5;
+        }
+
+        /* Block inputs */
+        .block input, .block select {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+            padding: 2px 6px;
+            color: white;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.65rem;
+            width: 40px;
+            text-align: center;
+        }
+
+        .block select {
+            width: auto;
+            cursor: pointer;
+        }
+
+        .block input:focus, .block select:focus {
+            outline: none;
+            border-color: rgba(255, 255, 255, 0.5);
+        }
+
+        /* Controls */
+        .controls {
+            display: flex;
+            gap: 8px;
+            padding: 12px 16px;
+            border-top: 1px solid var(--panel-border);
+        }
+
+        .btn {
+            flex: 1;
+            padding: 10px 16px;
+            border: none;
+            border-radius: 8px;
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--amber) 0%, var(--amber-dark) 100%);
+            color: #1a1a1a;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(255, 149, 0, 0.3);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        /* Code Preview */
+        .code-preview {
+            position: fixed;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 280px;
+            z-index: 20;
+        }
+
+        .code-preview pre {
+            padding: 16px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            line-height: 1.6;
+            background: var(--code-bg);
+            border-radius: 0 0 12px 12px;
+            overflow-x: auto;
+            max-height: 300px;
+        }
+
+        .code-preview code {
+            color: #e2e8f0;
+        }
+
+        .code-preview .keyword {
+            color: #c084fc;
+        }
+
+        .code-preview .function {
+            color: #60a5fa;
+        }
+
+        .code-preview .number {
+            color: #fbbf24;
+        }
+
+        .code-preview .string {
+            color: #4ade80;
+        }
+
+        .code-preview .comment {
+            color: #6b7280;
+        }
+
+        /* Variable Display */
+        .var-display {
+            position: fixed;
+            right: 20px;
+            bottom: 20px;
+            z-index: 20;
+            width: 280px;
+        }
+
+        .var-content {
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .var-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 14px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+        }
+
+        .var-name {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        .var-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--amber);
+            text-shadow: 0 0 10px rgba(255, 149, 0, 0.5);
+        }
+
+        .array-visual {
+            display: flex;
+            gap: 4px;
+        }
+
+        .array-index {
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.65rem;
+            color: var(--text-secondary);
+            transition: all 0.2s ease;
+        }
+
+        .array-index.active {
+            background: var(--amber);
+            color: #1a1a1a;
+            box-shadow: 0 0 15px rgba(255, 149, 0, 0.5);
+            transform: scale(1.1);
+        }
+
+        /* Tempo Control */
+        .tempo-control {
+            position: fixed;
+            left: 20px;
+            bottom: 20px;
+            z-index: 20;
+            width: 200px;
+        }
+
+        .tempo-content {
+            padding: 16px;
+        }
+
+        .tempo-slider {
+            width: 100%;
+            -webkit-appearance: none;
+            height: 6px;
+            border-radius: 3px;
+            background: rgba(255, 255, 255, 0.1);
+            outline: none;
+            margin: 12px 0;
+        }
+
+        .tempo-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: var(--amber);
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(255, 149, 0, 0.5);
+        }
+
+        .tempo-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
+            color: var(--amber);
+            text-align: center;
+        }
+
+        /* Instructions */
+        .instructions {
+            position: fixed;
+            top: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 20;
+            text-align: center;
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+            opacity: 0.8;
+        }
+
+        .instructions kbd {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.65rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* Drum Pad Info Tooltip */
+        .pad-tooltip {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -100px);
+            z-index: 30;
+            background: var(--panel-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--amber);
+            border-radius: 8px;
+            padding: 12px 20px;
+            text-align: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .pad-tooltip.visible {
+            opacity: 1;
+        }
+
+        .pad-tooltip .pad-index {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--amber);
+        }
+
+        .pad-tooltip .pad-label {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
+
+        /* Status indicator */
+        .status {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 20;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: var(--panel-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--panel-border);
+            border-radius: 20px;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--success);
+            box-shadow: 0 0 8px var(--success);
+        }
+
+        .status.running .status-dot {
+            background: var(--amber);
+            box-shadow: 0 0 8px var(--amber);
+            animation: pulse 0.5s ease infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* Loading screen */
+        .loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #0a0a0c;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            transition: opacity 0.5s ease;
+        }
+
+        .loading.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .loading h1 {
+            font-size: 2rem;
+            color: var(--amber);
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            margin-bottom: 20px;
+        }
+
+        .loading-bar {
+            width: 200px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .loading-bar-fill {
+            height: 100%;
+            background: var(--amber);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        /* Dragging state */
+        .block.dragging {
+            position: fixed;
+            z-index: 1000;
+            pointer-events: none;
+            opacity: 0.9;
+            transform: scale(1.05) rotate(2deg);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div class="loading" id="loading">
+        <h1>Loop Studio</h1>
+        <div class="loading-bar">
+            <div class="loading-bar-fill" id="loading-fill"></div>
+        </div>
+    </div>
+
+    <!-- 3D Canvas -->
+    <div id="canvas-container"></div>
+
+    <!-- Crosshair -->
+    <div class="crosshair"></div>
+
+    <!-- Header -->
+    <div class="header">
+        <h1>Loop Studio</h1>
+        <p>Learn For Loops Through Music Production</p>
+    </div>
+
+    <!-- Instructions -->
+    <div class="instructions">
+        <kbd>Click & Drag</kbd> to look around • <kbd>Click Pads</kbd> to hear sounds • Drag blocks to build your loop
+    </div>
+
+    <!-- Status -->
+    <div class="status" id="status">
+        <div class="status-dot"></div>
+        <span>Ready</span>
+    </div>
+
+    <!-- Block Palette -->
+    <div class="block-palette panel">
+        <div class="panel-header">
+            <div class="dot"></div>
+            <h3>Code Blocks</h3>
+        </div>
+        <div class="panel-content" id="palette">
+            <div class="block-category">Loops</div>
+            <div class="block loop" data-type="for-loop" draggable="true">
+                for (i = <input type="number" value="0" min="0" max="7" data-param="start">; 
+                i &lt; <input type="number" value="8" min="1" max="8" data-param="end">; 
+                <select data-param="step">
+                    <option value="1">i++</option>
+                    <option value="2">i += 2</option>
+                    <option value="-1">i--</option>
+                </select>)
+            </div>
+            
+            <div class="block-category">Actions</div>
+            <div class="block action" data-type="play-sample" draggable="true">
+                playSample(drums[i])
+            </div>
+            <div class="block wait" data-type="wait" draggable="true">
+                wait(<input type="number" value="500" min="100" max="2000" step="100" data-param="ms">ms)
+            </div>
+            
+            <div class="block-category">Conditionals</div>
+            <div class="block conditional" data-type="if-even" draggable="true">
+                if (i % 2 === 0) { ... }
+            </div>
+            <div class="block conditional" data-type="if-odd" draggable="true">
+                if (i % 2 === 1) { ... }
+            </div>
+            <div class="block conditional" data-type="skip" draggable="true">
+                if (i === <input type="number" value="0" min="0" max="7" data-param="skip">) continue;
+            </div>
+        </div>
+    </div>
+
+    <!-- Workspace -->
+    <div class="workspace panel">
+        <div class="panel-header">
+            <div class="dot"></div>
+            <h3>Workspace</h3>
+        </div>
+        <div class="workspace-content" id="workspace">
+            <div class="workspace-empty">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <path d="M12 5v14M5 12h14"/>
+                </svg>
+                <span>Drag blocks here to build your loop</span>
+            </div>
+        </div>
+        <div class="controls">
+            <button class="btn btn-secondary" id="clear-btn">Clear</button>
+            <button class="btn btn-primary" id="run-btn">▶ Run Code</button>
+        </div>
+    </div>
+
+    <!-- Code Preview -->
+    <div class="code-preview panel">
+        <div class="panel-header">
+            <div class="dot"></div>
+            <h3>JavaScript Output</h3>
+        </div>
+        <pre><code id="code-output"><span class="comment">// Your code will appear here</span>
+<span class="comment">// as you build with blocks</span></code></pre>
+    </div>
+
+    <!-- Variable Display -->
+    <div class="var-display panel">
+        <div class="panel-header">
+            <div class="dot"></div>
+            <h3>Variables</h3>
+        </div>
+        <div class="var-content">
+            <div class="var-item">
+                <span class="var-name">i =</span>
+                <span class="var-value" id="var-i">-</span>
+            </div>
+            <div class="var-item">
+                <span class="var-name">drums[i]</span>
+                <div class="array-visual" id="array-visual">
+                    <div class="array-index">0</div>
+                    <div class="array-index">1</div>
+                    <div class="array-index">2</div>
+                    <div class="array-index">3</div>
+                    <div class="array-index">4</div>
+                    <div class="array-index">5</div>
+                    <div class="array-index">6</div>
+                    <div class="array-index">7</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tempo Control -->
+    <div class="tempo-control panel">
+        <div class="panel-header">
+            <div class="dot"></div>
+            <h3>Tempo</h3>
+        </div>
+        <div class="tempo-content">
+            <input type="range" class="tempo-slider" id="tempo" min="100" max="1000" value="400">
+            <div class="tempo-value"><span id="tempo-value">400</span> ms/step</div>
+        </div>
+    </div>
+
+    <!-- Pad Tooltip -->
+    <div class="pad-tooltip" id="pad-tooltip">
+        <div class="pad-index" id="tooltip-index">0</div>
+        <div class="pad-label">drums[<span id="tooltip-array-index">0</span>]</div>
+    </div>
+
+    <script>
+        // ==================== AUDIO ENGINE ====================
+        class DrumMachine {
+            constructor() {
+                this.audioContext = null;
+                this.samples = [
+                    { name: 'Kick', freq: 60, decay: 0.5, type: 'kick' },
+                    { name: 'Snare', freq: 200, decay: 0.2, type: 'snare' },
+                    { name: 'Hi-Hat', freq: 8000, decay: 0.05, type: 'hihat' },
+                    { name: 'Clap', freq: 1000, decay: 0.15, type: 'clap' },
+                    { name: 'Tom Low', freq: 80, decay: 0.3, type: 'tom' },
+                    { name: 'Tom Mid', freq: 120, decay: 0.25, type: 'tom' },
+                    { name: 'Tom High', freq: 180, decay: 0.2, type: 'tom' },
+                    { name: 'Rim', freq: 500, decay: 0.1, type: 'rim' }
+                ];
+            }
+
+            init() {
+                if (!this.audioContext) {
+                    this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                }
+            }
+
+            playSample(index) {
+                this.init();
+                const sample = this.samples[index];
+                if (!sample) return;
+
+                const now = this.audioContext.currentTime;
+
+                switch (sample.type) {
+                    case 'kick':
+                        this.playKick(now);
+                        break;
+                    case 'snare':
+                        this.playSnare(now);
+                        break;
+                    case 'hihat':
+                        this.playHiHat(now);
+                        break;
+                    case 'clap':
+                        this.playClap(now);
+                        break;
+                    case 'tom':
+                        this.playTom(now, sample.freq);
+                        break;
+                    case 'rim':
+                        this.playRim(now);
+                        break;
+                }
+            }
+
+            playKick(time) {
+                const osc = this.audioContext.createOscillator();
+                const gain = this.audioContext.createGain();
+                
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(150, time);
+                osc.frequency.exponentialRampToValueAtTime(30, time + 0.1);
+                
+                gain.gain.setValueAtTime(1, time);
+                gain.gain.exponentialRampToValueAtTime(0.01, time + 0.5);
+                
+                osc.connect(gain);
+                gain.connect(this.audioContext.destination);
+                
+                osc.start(time);
+                osc.stop(time + 0.5);
+            }
+
+            playSnare(time) {
+                // Noise for snare
+                const bufferSize = this.audioContext.sampleRate * 0.2;
+                const buffer = this.audioContext.createBuffer(1, bufferSize, this.audioContext.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = Math.random() * 2 - 1;
+                }
+                
+                const noise = this.audioContext.createBufferSource();
+                noise.buffer = buffer;
+                
+                const noiseFilter = this.audioContext.createBiquadFilter();
+                noiseFilter.type = 'highpass';
+                noiseFilter.frequency.value = 1000;
+                
+                const noiseGain = this.audioContext.createGain();
+                noiseGain.gain.setValueAtTime(0.7, time);
+                noiseGain.gain.exponentialRampToValueAtTime(0.01, time + 0.2);
+                
+                noise.connect(noiseFilter);
+                noiseFilter.connect(noiseGain);
+                noiseGain.connect(this.audioContext.destination);
+                
+                // Tone
+                const osc = this.audioContext.createOscillator();
+                const oscGain = this.audioContext.createGain();
+                osc.type = 'triangle';
+                osc.frequency.value = 180;
+                oscGain.gain.setValueAtTime(0.5, time);
+                oscGain.gain.exponentialRampToValueAtTime(0.01, time + 0.1);
+                
+                osc.connect(oscGain);
+                oscGain.connect(this.audioContext.destination);
+                
+                noise.start(time);
+                osc.start(time);
+                osc.stop(time + 0.1);
+            }
+
+            playHiHat(time) {
+                const bufferSize = this.audioContext.sampleRate * 0.05;
+                const buffer = this.audioContext.createBuffer(1, bufferSize, this.audioContext.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = Math.random() * 2 - 1;
+                }
+                
+                const noise = this.audioContext.createBufferSource();
+                noise.buffer = buffer;
+                
+                const filter = this.audioContext.createBiquadFilter();
+                filter.type = 'highpass';
+                filter.frequency.value = 7000;
+                
+                const gain = this.audioContext.createGain();
+                gain.gain.setValueAtTime(0.4, time);
+                gain.gain.exponentialRampToValueAtTime(0.01, time + 0.05);
+                
+                noise.connect(filter);
+                filter.connect(gain);
+                gain.connect(this.audioContext.destination);
+                
+                noise.start(time);
+            }
+
+            playClap(time) {
+                for (let i = 0; i < 3; i++) {
+                    const bufferSize = this.audioContext.sampleRate * 0.02;
+                    const buffer = this.audioContext.createBuffer(1, bufferSize, this.audioContext.sampleRate);
+                    const data = buffer.getChannelData(0);
+                    for (let j = 0; j < bufferSize; j++) {
+                        data[j] = Math.random() * 2 - 1;
+                    }
+                    
+                    const noise = this.audioContext.createBufferSource();
+                    noise.buffer = buffer;
+                    
+                    const filter = this.audioContext.createBiquadFilter();
+                    filter.type = 'bandpass';
+                    filter.frequency.value = 2000;
+                    
+                    const gain = this.audioContext.createGain();
+                    const startTime = time + i * 0.01;
+                    gain.gain.setValueAtTime(0.6, startTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, startTime + 0.1);
+                    
+                    noise.connect(filter);
+                    filter.connect(gain);
+                    gain.connect(this.audioContext.destination);
+                    
+                    noise.start(startTime);
+                }
+            }
+
+            playTom(time, freq) {
+                const osc = this.audioContext.createOscillator();
+                const gain = this.audioContext.createGain();
+                
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(freq * 1.5, time);
+                osc.frequency.exponentialRampToValueAtTime(freq, time + 0.1);
+                
+                gain.gain.setValueAtTime(0.7, time);
+                gain.gain.exponentialRampToValueAtTime(0.01, time + 0.3);
+                
+                osc.connect(gain);
+                gain.connect(this.audioContext.destination);
+                
+                osc.start(time);
+                osc.stop(time + 0.3);
+            }
+
+            playRim(time) {
+                const osc = this.audioContext.createOscillator();
+                const osc2 = this.audioContext.createOscillator();
+                const gain = this.audioContext.createGain();
+                
+                osc.type = 'triangle';
+                osc.frequency.value = 500;
+                osc2.type = 'square';
+                osc2.frequency.value = 800;
+                
+                gain.gain.setValueAtTime(0.4, time);
+                gain.gain.exponentialRampToValueAtTime(0.01, time + 0.05);
+                
+                osc.connect(gain);
+                osc2.connect(gain);
+                gain.connect(this.audioContext.destination);
+                
+                osc.start(time);
+                osc2.start(time);
+                osc.stop(time + 0.05);
+                osc2.stop(time + 0.05);
+            }
+        }
+
+        const drumMachine = new DrumMachine();
+
+        // ==================== 3D STUDIO ====================
+        let scene, camera, renderer;
+        let drumPads = [];
+        let isMouseDown = false;
+        let mouseX = 0, mouseY = 0;
+        let targetRotationX = 0, targetRotationY = 0;
+        let currentRotationX = 0, currentRotationY = 0;
+        let raycaster, mouse;
+
+        function initThreeJS() {
+            // Scene
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x0a0a0c);
+            scene.fog = new THREE.Fog(0x0a0a0c, 5, 25);
+
+            // Camera
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 100);
+            camera.position.set(0, 1.6, 2);
+
+            // Renderer
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            renderer.toneMapping = THREE.ACESFilmicToneMapping;
+            renderer.toneMappingExposure = 1;
+            document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+            // Raycaster for clicking
+            raycaster = new THREE.Raycaster();
+            mouse = new THREE.Vector2();
+
+            // Build the studio
+            createStudio();
+            createLighting();
+            createDrumMachine();
+
+            // Events
+            window.addEventListener('resize', onWindowResize);
+            renderer.domElement.addEventListener('mousedown', onMouseDown);
+            renderer.domElement.addEventListener('mouseup', onMouseUp);
+            renderer.domElement.addEventListener('mousemove', onMouseMove);
+            renderer.domElement.addEventListener('click', onCanvasClick);
+
+            // Start animation
+            animate();
+            
+            // Hide loading screen
+            setTimeout(() => {
+                document.getElementById('loading').classList.add('hidden');
+            }, 500);
+        }
+
+        function createStudio() {
+            const textureLoader = new THREE.TextureLoader();
+
+            // Floor
+            const floorGeo = new THREE.PlaneGeometry(20, 20);
+            const floorMat = new THREE.MeshStandardMaterial({
+                color: 0x1a1a1a,
+                roughness: 0.8,
+                metalness: 0.2
+            });
+            const floor = new THREE.Mesh(floorGeo, floorMat);
+            floor.rotation.x = -Math.PI / 2;
+            floor.receiveShadow = true;
+            scene.add(floor);
+
+            // Walls
+            const wallMat = new THREE.MeshStandardMaterial({
+                color: 0x151515,
+                roughness: 0.9,
+                metalness: 0.1
+            });
+
+            // Back wall
+            const backWall = new THREE.Mesh(new THREE.PlaneGeometry(20, 8), wallMat);
+            backWall.position.set(0, 4, -5);
+            backWall.receiveShadow = true;
+            scene.add(backWall);
+
+            // Side walls
+            const leftWall = new THREE.Mesh(new THREE.PlaneGeometry(15, 8), wallMat);
+            leftWall.position.set(-10, 4, 0);
+            leftWall.rotation.y = Math.PI / 2;
+            scene.add(leftWall);
+
+            const rightWall = new THREE.Mesh(new THREE.PlaneGeometry(15, 8), wallMat);
+            rightWall.position.set(10, 4, 0);
+            rightWall.rotation.y = -Math.PI / 2;
+            scene.add(rightWall);
+
+            // Ceiling
+            const ceiling = new THREE.Mesh(new THREE.PlaneGeometry(20, 15), wallMat);
+            ceiling.position.set(0, 8, 0);
+            ceiling.rotation.x = Math.PI / 2;
+            scene.add(ceiling);
+
+            // Acoustic panels on back wall
+            const panelMat = new THREE.MeshStandardMaterial({
+                color: 0x2a2a2a,
+                roughness: 1,
+                metalness: 0
+            });
+
+            for (let i = 0; i < 6; i++) {
+                for (let j = 0; j < 2; j++) {
+                    const panel = new THREE.Mesh(
+                        new THREE.BoxGeometry(1.2, 1.2, 0.15),
+                        panelMat
+                    );
+                    panel.position.set(-3 + i * 1.4, 2.5 + j * 1.5, -4.9);
+                    scene.add(panel);
+                }
+            }
+
+            // Desk
+            const deskMat = new THREE.MeshStandardMaterial({
+                color: 0x2d2d2d,
+                roughness: 0.3,
+                metalness: 0.5
+            });
+            
+            const deskTop = new THREE.Mesh(new THREE.BoxGeometry(3, 0.08, 1.2), deskMat);
+            deskTop.position.set(0, 0.85, 0);
+            deskTop.castShadow = true;
+            deskTop.receiveShadow = true;
+            scene.add(deskTop);
+
+            // Desk legs
+            const legMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, metalness: 0.8 });
+            const legGeo = new THREE.CylinderGeometry(0.03, 0.03, 0.85);
+            
+            [[-1.4, -0.5], [-1.4, 0.5], [1.4, -0.5], [1.4, 0.5]].forEach(([x, z]) => {
+                const leg = new THREE.Mesh(legGeo, legMat);
+                leg.position.set(x, 0.425, z);
+                scene.add(leg);
+            });
+
+            // Monitors (screens)
+            const monitorMat = new THREE.MeshStandardMaterial({
+                color: 0x000000,
+                roughness: 0.1,
+                metalness: 0.9
+            });
+            
+            const screenMat = new THREE.MeshStandardMaterial({
+                color: 0x1a1a2e,
+                emissive: 0x1a1a2e,
+                emissiveIntensity: 0.3,
+                roughness: 0.1
+            });
+
+            // Left monitor
+            const monitor1Frame = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.5, 0.05), monitorMat);
+            monitor1Frame.position.set(-0.6, 1.35, -0.3);
+            scene.add(monitor1Frame);
+            
+            const screen1 = new THREE.Mesh(new THREE.PlaneGeometry(0.7, 0.4), screenMat);
+            screen1.position.set(-0.6, 1.35, -0.27);
+            scene.add(screen1);
+
+            // Right monitor
+            const monitor2Frame = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.5, 0.05), monitorMat);
+            monitor2Frame.position.set(0.6, 1.35, -0.3);
+            scene.add(monitor2Frame);
+            
+            const screen2 = new THREE.Mesh(new THREE.PlaneGeometry(0.7, 0.4), screenMat);
+            screen2.position.set(0.6, 1.35, -0.27);
+            scene.add(screen2);
+
+            // Studio monitors (speakers)
+            const speakerMat = new THREE.MeshStandardMaterial({
+                color: 0x1a1a1a,
+                roughness: 0.4,
+                metalness: 0.6
+            });
+
+            const coneMat = new THREE.MeshStandardMaterial({
+                color: 0xf5f5dc,
+                roughness: 0.8
+            });
+
+            [-2, 2].forEach(x => {
+                // Speaker body
+                const speaker = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.45, 0.35), speakerMat);
+                speaker.position.set(x, 1.2, -0.2);
+                scene.add(speaker);
+
+                // Woofer
+                const woofer = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.08, 0.05, 32), coneMat);
+                woofer.rotation.x = Math.PI / 2;
+                woofer.position.set(x, 1.12, 0);
+                scene.add(woofer);
+
+                // Tweeter
+                const tweeter = new THREE.Mesh(new THREE.SphereGeometry(0.03, 16, 16), speakerMat);
+                tweeter.position.set(x, 1.3, 0);
+                scene.add(tweeter);
+            });
+
+            // Mixing console
+            const consoleMat = new THREE.MeshStandardMaterial({
+                color: 0x2a2a2a,
+                roughness: 0.5,
+                metalness: 0.4
+            });
+
+            const mixingConsole = new THREE.Mesh(
+                new THREE.BoxGeometry(1.8, 0.15, 0.5),
+                consoleMat
+            );
+            mixingConsole.position.set(0, 0.95, 0.35);
+            mixingConsole.rotation.x = -0.2;
+            scene.add(mixingConsole);
+
+            // Faders on console
+            const faderMat = new THREE.MeshStandardMaterial({
+                color: 0x444444,
+                metalness: 0.8
+            });
+            
+            for (let i = 0; i < 8; i++) {
+                const fader = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.08, 0.02), faderMat);
+                fader.position.set(-0.7 + i * 0.2, 1.0, 0.35);
+                scene.add(fader);
+                
+                // Fader cap
+                const cap = new THREE.Mesh(
+                    new THREE.BoxGeometry(0.05, 0.02, 0.03),
+                    new THREE.MeshStandardMaterial({ color: 0xff9500, emissive: 0xff9500, emissiveIntensity: 0.2 })
+                );
+                cap.position.set(-0.7 + i * 0.2, 0.98 + Math.random() * 0.04, 0.35);
+                scene.add(cap);
+            }
+
+            // LED strips (ambient lighting)
+            const ledMat = new THREE.MeshBasicMaterial({
+                color: 0xff9500,
+                transparent: true,
+                opacity: 0.8
+            });
+
+            // Under desk LED
+            const underLed = new THREE.Mesh(new THREE.BoxGeometry(2.8, 0.02, 0.02), ledMat);
+            underLed.position.set(0, 0.82, 0.5);
+            scene.add(underLed);
+
+            // Back wall LED strip
+            const backLed = new THREE.Mesh(new THREE.BoxGeometry(8, 0.03, 0.02), ledMat);
+            backLed.position.set(0, 0.1, -4.9);
+            scene.add(backLed);
+        }
+
+        function createLighting() {
+            // Ambient light
+            const ambient = new THREE.AmbientLight(0x404040, 0.3);
+            scene.add(ambient);
+
+            // Main overhead light
+            const mainLight = new THREE.SpotLight(0xffffff, 1);
+            mainLight.position.set(0, 7, 2);
+            mainLight.angle = Math.PI / 4;
+            mainLight.penumbra = 0.5;
+            mainLight.castShadow = true;
+            mainLight.shadow.mapSize.width = 1024;
+            mainLight.shadow.mapSize.height = 1024;
+            scene.add(mainLight);
+
+            // Amber accent lights
+            const amberLight1 = new THREE.PointLight(0xff9500, 0.8, 10);
+            amberLight1.position.set(-3, 2, -2);
+            scene.add(amberLight1);
+
+            const amberLight2 = new THREE.PointLight(0xff9500, 0.8, 10);
+            amberLight2.position.set(3, 2, -2);
+            scene.add(amberLight2);
+
+            // Under desk glow
+            const deskLight = new THREE.PointLight(0xff9500, 0.5, 3);
+            deskLight.position.set(0, 0.7, 0.5);
+            scene.add(deskLight);
+
+            // Screen glow
+            const screenLight = new THREE.PointLight(0x4466ff, 0.3, 2);
+            screenLight.position.set(0, 1.3, -0.1);
+            scene.add(screenLight);
+        }
+
+        function createDrumMachine() {
+            const drumMachineGroup = new THREE.Group();
+            
+            // Base
+            const baseMat = new THREE.MeshStandardMaterial({
+                color: 0x1a1a1a,
+                roughness: 0.3,
+                metalness: 0.7
+            });
+            
+            const base = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.08, 0.5), baseMat);
+            base.position.y = 0.04;
+            base.castShadow = true;
+            base.receiveShadow = true;
+            drumMachineGroup.add(base);
+
+            // Top panel (angled)
+            const topPanel = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.03, 0.4), baseMat);
+            topPanel.position.set(0, 0.1, 0);
+            topPanel.rotation.x = -0.15;
+            drumMachineGroup.add(topPanel);
+
+            // Drum pads
+            const padColors = [
+                0xff5555, // Kick - Red
+                0x55ff55, // Snare - Green
+                0x5555ff, // Hi-Hat - Blue
+                0xffff55, // Clap - Yellow
+                0xff55ff, // Tom Low - Magenta
+                0x55ffff, // Tom Mid - Cyan
+                0xffaa55, // Tom High - Orange
+                0xaa55ff  // Rim - Purple
+            ];
+
+            const padLabels = ['KICK', 'SNARE', 'HAT', 'CLAP', 'TOM L', 'TOM M', 'TOM H', 'RIM'];
+
+            for (let i = 0; i < 8; i++) {
+                const padGroup = new THREE.Group();
+                
+                // Pad base (dark)
+                const padBase = new THREE.Mesh(
+                    new THREE.BoxGeometry(0.15, 0.02, 0.15),
+                    new THREE.MeshStandardMaterial({ color: 0x0a0a0a, roughness: 0.5 })
+                );
+                padGroup.add(padBase);
+
+                // Pad surface (colored, will glow when active)
+                const padMat = new THREE.MeshStandardMaterial({
+                    color: padColors[i],
+                    roughness: 0.4,
+                    metalness: 0.3,
+                    emissive: padColors[i],
+                    emissiveIntensity: 0.1
+                });
+                
+                const pad = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.025, 0.13), padMat);
+                pad.position.y = 0.02;
+                pad.userData = { index: i, label: padLabels[i], color: padColors[i], material: padMat };
+                padGroup.add(pad);
+
+                // Position the pad
+                const xPos = -0.63 + i * 0.18;
+                padGroup.position.set(xPos, 0.12, 0);
+                
+                drumPads.push(pad);
+                drumMachineGroup.add(padGroup);
+
+                // Index label below pad
+                // (In Three.js we'd use TextGeometry or sprites, simplified here)
+            }
+
+            // Brand label area
+            const labelMat = new THREE.MeshStandardMaterial({
+                color: 0xff9500,
+                emissive: 0xff9500,
+                emissiveIntensity: 0.3
+            });
+            const label = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.01, 0.05), labelMat);
+            label.position.set(0, 0.09, 0.18);
+            drumMachineGroup.add(label);
+
+            drumMachineGroup.position.set(0, 0.89, 0.1);
+            scene.add(drumMachineGroup);
+        }
+
+        function highlightPad(index, active) {
+            if (index < 0 || index >= drumPads.length) return;
+            
+            const pad = drumPads[index];
+            const mat = pad.userData.material;
+            
+            if (active) {
+                mat.emissiveIntensity = 1;
+                pad.scale.set(1.1, 1.5, 1.1);
+            } else {
+                mat.emissiveIntensity = 0.1;
+                pad.scale.set(1, 1, 1);
+            }
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        function onMouseDown(e) {
+            if (e.target === renderer.domElement) {
+                isMouseDown = true;
+                mouseX = e.clientX;
+                mouseY = e.clientY;
+            }
+        }
+
+        function onMouseUp() {
+            isMouseDown = false;
+        }
+
+        function onMouseMove(e) {
+            if (isMouseDown) {
+                const deltaX = e.clientX - mouseX;
+                const deltaY = e.clientY - mouseY;
+                
+                targetRotationY -= deltaX * 0.005;
+                targetRotationX -= deltaY * 0.005;
+                
+                // Clamp vertical rotation
+                targetRotationX = Math.max(-0.5, Math.min(0.5, targetRotationX));
+                // Clamp horizontal rotation
+                targetRotationY = Math.max(-1, Math.min(1, targetRotationY));
+                
+                mouseX = e.clientX;
+                mouseY = e.clientY;
+            }
+        }
+
+        function onCanvasClick(e) {
+            // Check if we clicked on a drum pad
+            mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+            
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(drumPads);
+            
+            if (intersects.length > 0) {
+                const pad = intersects[0].object;
+                const index = pad.userData.index;
+                
+                // Play sound
+                drumMachine.playSample(index);
+                
+                // Visual feedback
+                highlightPad(index, true);
+                setTimeout(() => highlightPad(index, false), 150);
+                
+                // Show tooltip
+                showPadTooltip(index);
+            }
+        }
+
+        function showPadTooltip(index) {
+            const tooltip = document.getElementById('pad-tooltip');
+            document.getElementById('tooltip-index').textContent = index;
+            document.getElementById('tooltip-array-index').textContent = index;
+            tooltip.classList.add('visible');
+            
+            setTimeout(() => {
+                tooltip.classList.remove('visible');
+            }, 1500);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            // Smooth camera rotation
+            currentRotationX += (targetRotationX - currentRotationX) * 0.1;
+            currentRotationY += (targetRotationY - currentRotationY) * 0.1;
+            
+            camera.rotation.x = currentRotationX;
+            camera.rotation.y = currentRotationY;
+            
+            renderer.render(scene, camera);
+        }
+
+        // ==================== DRAG AND DROP SYSTEM ====================
+        let draggedBlock = null;
+        let dragClone = null;
+        let workspaceBlocks = [];
+
+        function initDragDrop() {
+            const palette = document.getElementById('palette');
+            const workspace = document.getElementById('workspace');
+            
+            // Palette block drag start
+            palette.querySelectorAll('.block').forEach(block => {
+                block.addEventListener('dragstart', onDragStart);
+                block.addEventListener('dragend', onDragEnd);
+                
+                // Prevent input drag
+                block.querySelectorAll('input, select').forEach(input => {
+                    input.addEventListener('mousedown', e => e.stopPropagation());
+                    input.addEventListener('dragstart', e => e.preventDefault());
+                });
+            });
+            
+            // Workspace drop zone
+            workspace.addEventListener('dragover', onDragOver);
+            workspace.addEventListener('dragleave', onDragLeave);
+            workspace.addEventListener('drop', onDrop);
+            
+            // Control buttons
+            document.getElementById('run-btn').addEventListener('click', runCode);
+            document.getElementById('clear-btn').addEventListener('click', clearWorkspace);
+            
+            // Tempo slider
+            document.getElementById('tempo').addEventListener('input', (e) => {
+                document.getElementById('tempo-value').textContent = e.target.value;
+            });
+        }
+
+        function onDragStart(e) {
+            draggedBlock = e.target.closest('.block');
+            e.dataTransfer.effectAllowed = 'copy';
+            e.dataTransfer.setData('text/plain', draggedBlock.dataset.type);
+            
+            setTimeout(() => {
+                draggedBlock.style.opacity = '0.5';
+            }, 0);
+        }
+
+        function onDragEnd(e) {
+            if (draggedBlock) {
+                draggedBlock.style.opacity = '1';
+            }
+            draggedBlock = null;
+        }
+
+        function onDragOver(e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'copy';
+            e.currentTarget.classList.add('drag-over');
+        }
+
+        function onDragLeave(e) {
+            e.currentTarget.classList.remove('drag-over');
+        }
+
+        function onDrop(e) {
+            e.preventDefault();
+            e.currentTarget.classList.remove('drag-over');
+            
+            const blockType = e.dataTransfer.getData('text/plain');
+            if (blockType && draggedBlock) {
+                addBlockToWorkspace(blockType, draggedBlock);
+            }
+        }
+
+        function addBlockToWorkspace(type, sourceBlock) {
+            const workspace = document.getElementById('workspace');
+            
+            // Remove empty state
+            const empty = workspace.querySelector('.workspace-empty');
+            if (empty) empty.remove();
+            
+            // Clone the block
+            const clone = sourceBlock.cloneNode(true);
+            clone.draggable = false;
+            clone.classList.remove('dragging');
+            
+            // Create workspace block container
+            const blockWrapper = document.createElement('div');
+            blockWrapper.className = 'workspace-block';
+            blockWrapper.dataset.type = type;
+            
+            // Determine if this should be nested (inside a loop)
+            const hasLoop = workspaceBlocks.some(b => b.type === 'for-loop');
+            const isLoopBlock = type === 'for-loop';
+            
+            if (hasLoop && !isLoopBlock) {
+                blockWrapper.classList.add('nested');
+            }
+            
+            // Remove button
+            const removeBtn = document.createElement('button');
+            removeBtn.className = 'remove-btn';
+            removeBtn.innerHTML = '×';
+            removeBtn.addEventListener('click', () => removeBlock(blockWrapper));
+            
+            blockWrapper.appendChild(clone);
+            blockWrapper.appendChild(removeBtn);
+            workspace.appendChild(blockWrapper);
+            
+            // Store block data
+            const blockData = {
+                type: type,
+                element: blockWrapper,
+                getParams: () => {
+                    const params = {};
+                    clone.querySelectorAll('input, select').forEach(input => {
+                        params[input.dataset.param] = input.value;
+                    });
+                    return params;
+                }
+            };
+            workspaceBlocks.push(blockData);
+            
+            // Enable inputs
+            clone.querySelectorAll('input, select').forEach(input => {
+                input.addEventListener('change', updateCodePreview);
+                input.addEventListener('input', updateCodePreview);
+            });
+            
+            updateCodePreview();
+        }
+
+        function removeBlock(wrapper) {
+            const index = workspaceBlocks.findIndex(b => b.element === wrapper);
+            if (index > -1) {
+                workspaceBlocks.splice(index, 1);
+            }
+            wrapper.remove();
+            
+            // Show empty state if needed
+            if (workspaceBlocks.length === 0) {
+                const workspace = document.getElementById('workspace');
+                workspace.innerHTML = `
+                    <div class="workspace-empty">
+                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <path d="M12 5v14M5 12h14"/>
+                        </svg>
+                        <span>Drag blocks here to build your loop</span>
+                    </div>
+                `;
+            }
+            
+            updateCodePreview();
+        }
+
+        function clearWorkspace() {
+            workspaceBlocks = [];
+            const workspace = document.getElementById('workspace');
+            workspace.innerHTML = `
+                <div class="workspace-empty">
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <path d="M12 5v14M5 12h14"/>
+                    </svg>
+                    <span>Drag blocks here to build your loop</span>
+                </div>
+            `;
+            updateCodePreview();
+            resetVariableDisplay();
+        }
+
+        function updateCodePreview() {
+            const codeOutput = document.getElementById('code-output');
+            
+            if (workspaceBlocks.length === 0) {
+                codeOutput.innerHTML = `<span class="comment">// Your code will appear here</span>\n<span class="comment">// as you build with blocks</span>`;
+                return;
+            }
+            
+            let code = '';
+            let indentLevel = 0;
+            const indent = () => '  '.repeat(indentLevel);
+            
+            // Find the loop block
+            const loopBlock = workspaceBlocks.find(b => b.type === 'for-loop');
+            const otherBlocks = workspaceBlocks.filter(b => b.type !== 'for-loop');
+            
+            if (loopBlock) {
+                const params = loopBlock.getParams();
+                let start = parseInt(params.start) || 0;
+                let end = parseInt(params.end) || 8;
+                let step = parseInt(params.step) || 1;
+                
+                // Handle reverse iteration
+                let comparison = 'i < ' + end;
+                let increment = 'i++';
+                
+                if (step === -1) {
+                    // Reverse: start from end-1, go to start
+                    const temp = start;
+                    start = end - 1;
+                    end = temp;
+                    comparison = 'i >= ' + end;
+                    increment = 'i--';
+                } else if (step === 2) {
+                    increment = 'i += 2';
+                }
+                
+                code += `<span class="keyword">const</span> drums = [<span class="string">'kick'</span>, <span class="string">'snare'</span>, <span class="string">'hat'</span>, <span class="string">'clap'</span>, <span class="string">'tom_l'</span>, <span class="string">'tom_m'</span>, <span class="string">'tom_h'</span>, <span class="string">'rim'</span>];\n\n`;
+                code += `<span class="keyword">for</span> (<span class="keyword">let</span> i = <span class="number">${start}</span>; ${comparison}; ${increment}) {\n`;
+                indentLevel++;
+                
+                // Add other blocks inside the loop
+                otherBlocks.forEach(block => {
+                    const bParams = block.getParams();
+                    
+                    switch (block.type) {
+                        case 'play-sample':
+                            code += `${indent()}<span class="function">playSample</span>(drums[i]);\n`;
+                            break;
+                        case 'wait':
+                            const ms = bParams.ms || 500;
+                            code += `${indent()}<span class="keyword">await</span> <span class="function">wait</span>(<span class="number">${ms}</span>);\n`;
+                            break;
+                        case 'if-even':
+                            code += `${indent()}<span class="keyword">if</span> (i % <span class="number">2</span> === <span class="number">0</span>) {\n`;
+                            code += `${indent()}  <span class="comment">// even indices only</span>\n`;
+                            code += `${indent()}}\n`;
+                            break;
+                        case 'if-odd':
+                            code += `${indent()}<span class="keyword">if</span> (i % <span class="number">2</span> === <span class="number">1</span>) {\n`;
+                            code += `${indent()}  <span class="comment">// odd indices only</span>\n`;
+                            code += `${indent()}}\n`;
+                            break;
+                        case 'skip':
+                            const skipIndex = bParams.skip || 0;
+                            code += `${indent()}<span class="keyword">if</span> (i === <span class="number">${skipIndex}</span>) <span class="keyword">continue</span>;\n`;
+                            break;
+                    }
+                });
+                
+                indentLevel--;
+                code += `}`;
+            } else {
+                // No loop, just show standalone blocks
+                otherBlocks.forEach(block => {
+                    code += `<span class="comment">// Block needs to be inside a for loop</span>\n`;
+                });
+            }
+            
+            codeOutput.innerHTML = code;
+        }
+
+        // ==================== CODE EXECUTION ====================
+        let isRunning = false;
+
+        async function runCode() {
+            if (isRunning) return;
+            
+            const loopBlock = workspaceBlocks.find(b => b.type === 'for-loop');
+            if (!loopBlock) {
+                alert('Add a for loop block first!');
+                return;
+            }
+            
+            isRunning = true;
+            const runBtn = document.getElementById('run-btn');
+            const status = document.getElementById('status');
+            
+            runBtn.disabled = true;
+            runBtn.textContent = '⏸ Running...';
+            status.classList.add('running');
+            status.querySelector('span').textContent = 'Running';
+            
+            const tempo = parseInt(document.getElementById('tempo').value);
+            const params = loopBlock.getParams();
+            let start = parseInt(params.start) || 0;
+            let end = parseInt(params.end) || 8;
+            let step = parseInt(params.step) || 1;
+            
+            // Build conditions
+            const conditions = [];
+            const skipIndices = [];
+            
+            workspaceBlocks.forEach(block => {
+                if (block.type === 'if-even') {
+                    conditions.push(i => i % 2 === 0);
+                } else if (block.type === 'if-odd') {
+                    conditions.push(i => i % 2 === 1);
+                } else if (block.type === 'skip') {
+                    skipIndices.push(parseInt(block.getParams().skip) || 0);
+                }
+            });
+            
+            const hasPlaySample = workspaceBlocks.some(b => b.type === 'play-sample');
+            
+            // Execute the loop
+            try {
+                if (step === -1) {
+                    // Reverse iteration
+                    for (let i = end - 1; i >= start; i--) {
+                        await executeIteration(i, tempo, conditions, skipIndices, hasPlaySample);
+                    }
+                } else {
+                    // Forward iteration
+                    for (let i = start; i < end; i += step) {
+                        await executeIteration(i, tempo, conditions, skipIndices, hasPlaySample);
+                    }
+                }
+            } catch (e) {
+                console.error(e);
+            }
+            
+            // Reset
+            isRunning = false;
+            runBtn.disabled = false;
+            runBtn.textContent = '▶ Run Code';
+            status.classList.remove('running');
+            status.querySelector('span').textContent = 'Ready';
+            resetVariableDisplay();
+        }
+
+        async function executeIteration(i, tempo, conditions, skipIndices, hasPlaySample) {
+            // Check skip
+            if (skipIndices.includes(i)) {
+                return;
+            }
+            
+            // Check conditions (if any condition block exists, at least one must pass)
+            if (conditions.length > 0) {
+                const passes = conditions.some(cond => cond(i));
+                if (!passes) return;
+            }
+            
+            // Update variable display
+            updateVariableDisplay(i);
+            
+            // Highlight pad and play sound
+            if (hasPlaySample && i >= 0 && i < 8) {
+                highlightPad(i, true);
+                drumMachine.playSample(i);
+            }
+            
+            // Wait
+            await new Promise(resolve => setTimeout(resolve, tempo));
+            
+            // Reset pad
+            if (hasPlaySample && i >= 0 && i < 8) {
+                highlightPad(i, false);
+            }
+        }
+
+        function updateVariableDisplay(i) {
+            document.getElementById('var-i').textContent = i;
+            
+            // Update array visual
+            const arrayIndices = document.querySelectorAll('.array-index');
+            arrayIndices.forEach((el, idx) => {
+                el.classList.toggle('active', idx === i);
+            });
+        }
+
+        function resetVariableDisplay() {
+            document.getElementById('var-i').textContent = '-';
+            document.querySelectorAll('.array-index').forEach(el => {
+                el.classList.remove('active');
+            });
+            
+            // Reset all pad highlights
+            drumPads.forEach((_, idx) => highlightPad(idx, false));
+        }
+
+        // ==================== LOADING ====================
+        function simulateLoading() {
+            const fill = document.getElementById('loading-fill');
+            let progress = 0;
+            
+            const interval = setInterval(() => {
+                progress += Math.random() * 20;
+                if (progress >= 100) {
+                    progress = 100;
+                    clearInterval(interval);
+                }
+                fill.style.width = progress + '%';
+            }, 100);
+        }
+
+        // ==================== INIT ====================
+        window.addEventListener('DOMContentLoaded', () => {
+            simulateLoading();
+            initThreeJS();
+            initDragDrop();
+        });
+    </script>
+</body>
+</html>
