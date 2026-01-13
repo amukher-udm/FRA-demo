@@ -94,15 +94,17 @@
         /* Header */
         .header {
             position: fixed;
-            top: 20px;
+            top: 15px;
             left: 50%;
             transform: translateX(-50%);
             z-index: 20;
             text-align: center;
+            width: 100%;
+            pointer-events: none;
         }
 
         .header h1 {
-            font-size: 1.4rem;
+            font-size: 1.2rem;
             font-weight: 700;
             letter-spacing: 0.1em;
             text-transform: uppercase;
@@ -111,9 +113,9 @@
         }
 
         .header p {
-            font-size: 0.75rem;
+            font-size: 0.7rem;
             color: var(--text-secondary);
-            margin-top: 4px;
+            margin-top: 2px;
             letter-spacing: 0.05em;
         }
 
@@ -129,7 +131,7 @@
         }
 
         .panel-header {
-            padding: 12px 16px;
+            padding: 10px 14px;
             border-bottom: 1px solid var(--panel-border);
             display: flex;
             align-items: center;
@@ -137,7 +139,7 @@
         }
 
         .panel-header h3 {
-            font-size: 0.7rem;
+            font-size: 0.65rem;
             font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 0.1em;
@@ -155,19 +157,21 @@
         /* Block Palette */
         .block-palette {
             position: fixed;
-            left: 20px;
+            left: 15px;
             top: 50%;
             transform: translateY(-50%);
-            width: 200px;
+            width: 220px;
             z-index: 20;
+            max-height: 85vh;
+            display: flex;
+            flex-direction: column;
         }
 
         .block-palette .panel-content {
-            padding: 12px;
+            padding: 10px;
             display: flex;
             flex-direction: column;
-            gap: 8px;
-            max-height: 400px;
+            gap: 6px;
             overflow-y: auto;
         }
 
@@ -182,8 +186,8 @@
 
         /* Blocks */
         .block {
-            padding: 10px 12px;
-            border-radius: 8px;
+            padding: 8px 10px;
+            border-radius: 6px;
             font-family: 'JetBrains Mono', monospace;
             font-size: 0.7rem;
             font-weight: 600;
@@ -192,6 +196,11 @@
             user-select: none;
             position: relative;
             overflow: hidden;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 4px;
+            line-height: 1.5;
         }
 
         .block::before {
@@ -241,12 +250,12 @@
         }
 
         .block-category {
-            font-size: 0.6rem;
+            font-size: 0.55rem;
             text-transform: uppercase;
             letter-spacing: 0.05em;
             color: var(--text-secondary);
-            margin-top: 8px;
-            margin-bottom: 4px;
+            margin-top: 6px;
+            margin-bottom: 2px;
             padding-left: 4px;
         }
 
@@ -254,22 +263,33 @@
             margin-top: 0;
         }
 
-        /* Workspace */
+        /* Workspace - MOVED TO TOP */
         .workspace {
             position: fixed;
-            bottom: 20px;
+            top: 90px; /* Positioned below header */
             left: 50%;
             transform: translateX(-50%);
-            width: 600px;
+            width: 550px;
+            max-width: 90vw;
             z-index: 20;
         }
 
         .workspace-content {
-            padding: 16px;
-            min-height: 180px;
+            padding: 12px;
+            min-height: 200px; /* Increased height to fit 3-4 blocks */
+            max-height: 40vh;
+            overflow-y: auto;
             display: flex;
             flex-direction: column;
             gap: 6px;
+        }
+
+        .workspace-content::-webkit-scrollbar {
+            width: 4px;
+        }
+        .workspace-content::-webkit-scrollbar-thumb {
+            background: var(--amber-dark);
+            border-radius: 2px;
         }
 
         .workspace-content.drag-over {
@@ -290,19 +310,20 @@
             right: -8px;
             top: 50%;
             transform: translateY(-50%);
-            width: 20px;
-            height: 20px;
+            width: 18px;
+            height: 18px;
             border-radius: 50%;
             background: var(--error);
             border: none;
             color: white;
-            font-size: 12px;
+            font-size: 11px;
             cursor: pointer;
             opacity: 0;
             transition: opacity 0.2s;
             display: flex;
             align-items: center;
             justify-content: center;
+            z-index: 5;
         }
 
         .workspace-block:hover .remove-btn {
@@ -314,9 +335,9 @@
         }
 
         .workspace-block.nested {
-            margin-left: 24px;
-            padding-left: 12px;
-            border-left: 3px solid rgba(99, 102, 241, 0.5);
+            margin-left: 20px;
+            padding-left: 10px;
+            border-left: 2px solid rgba(99, 102, 241, 0.5);
         }
 
         .workspace-empty {
@@ -326,52 +347,57 @@
             justify-content: center;
             height: 120px;
             color: var(--text-secondary);
-            font-size: 0.8rem;
-            gap: 8px;
+            font-size: 0.75rem;
+            gap: 6px;
         }
 
         .workspace-empty svg {
             opacity: 0.5;
+            width: 32px;
+            height: 32px;
         }
 
         /* Block inputs */
         .block input, .block select {
-            background: rgba(0, 0, 0, 0.3);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.3);
             border-radius: 4px;
-            padding: 2px 6px;
+            padding: 2px 4px;
             color: white;
             font-family: 'JetBrains Mono', monospace;
-            font-size: 0.65rem;
-            width: 40px;
+            font-size: 0.7rem;
+            width: auto;
+            min-width: 40px;
             text-align: center;
+            margin: 0 2px;
         }
 
         .block select {
-            width: auto;
             cursor: pointer;
+            padding-right: 2px;
         }
 
         .block input:focus, .block select:focus {
             outline: none;
-            border-color: rgba(255, 255, 255, 0.5);
+            border-color: var(--amber);
+            background: rgba(0, 0, 0, 0.6);
         }
 
         /* Controls */
         .controls {
             display: flex;
             gap: 8px;
-            padding: 12px 16px;
+            padding: 10px 14px;
             border-top: 1px solid var(--panel-border);
         }
 
         .btn {
             flex: 1;
-            padding: 10px 16px;
+            padding: 8px 14px;
             border: none;
-            border-radius: 8px;
+            border-radius: 6px;
             font-family: 'Outfit', sans-serif;
-            font-size: 0.75rem;
+            font-size: 0.7rem;
             font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 0.05em;
@@ -408,82 +434,71 @@
         /* Code Preview */
         .code-preview {
             position: fixed;
-            right: 20px;
+            right: 15px;
             top: 50%;
             transform: translateY(-50%);
-            width: 280px;
+            width: 250px;
             z-index: 20;
+            max-height: 40vh;
+            display: flex;
+            flex-direction: column;
         }
 
         .code-preview pre {
-            padding: 16px;
+            padding: 12px;
             font-family: 'JetBrains Mono', monospace;
-            font-size: 0.7rem;
-            line-height: 1.6;
+            font-size: 0.65rem;
+            line-height: 1.5;
             background: var(--code-bg);
             border-radius: 0 0 12px 12px;
             overflow-x: auto;
-            max-height: 300px;
+            flex: 1;
         }
 
         .code-preview code {
             color: #e2e8f0;
         }
 
-        .code-preview .keyword {
-            color: #c084fc;
-        }
-
-        .code-preview .function {
-            color: #60a5fa;
-        }
-
-        .code-preview .number {
-            color: #fbbf24;
-        }
-
-        .code-preview .string {
-            color: #4ade80;
-        }
-
-        .code-preview .comment {
-            color: #6b7280;
-        }
+        .code-preview .keyword { color: #c084fc; }
+        .code-preview .function { color: #60a5fa; }
+        .code-preview .number { color: #fbbf24; }
+        .code-preview .string { color: #4ade80; }
+        .code-preview .comment { color: #6b7280; }
 
         /* Variable Display */
         .var-display {
             position: fixed;
-            right: 20px;
-            bottom: 20px;
+            right: 15px;
+            bottom: 15px;
             z-index: 20;
-            width: 280px;
+            width: 250px;
         }
 
         .var-content {
-            padding: 16px;
+            padding: 12px;
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 10px;
         }
 
         .var-item {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 10px 14px;
+            padding: 8px 10px;
             background: rgba(0, 0, 0, 0.3);
-            border-radius: 8px;
+            border-radius: 6px;
         }
 
         .var-name {
             font-family: 'JetBrains Mono', monospace;
-            font-size: 0.75rem;
+            font-size: 0.7rem;
             color: var(--text-secondary);
         }
 
         .var-value {
             font-family: 'JetBrains Mono', monospace;
-            font-size: 1.2rem;
+            font-size: 1.1rem;
             font-weight: 700;
             color: var(--amber);
             text-shadow: 0 0 10px rgba(255, 149, 0, 0.5);
@@ -491,19 +506,21 @@
 
         .array-visual {
             display: flex;
-            gap: 4px;
+            gap: 3px;
+            flex-wrap: wrap;
+            justify-content: flex-end;
         }
 
         .array-index {
-            width: 28px;
-            height: 28px;
+            width: 22px;
+            height: 22px;
             display: flex;
             align-items: center;
             justify-content: center;
             background: rgba(255, 255, 255, 0.1);
-            border-radius: 4px;
+            border-radius: 3px;
             font-family: 'JetBrains Mono', monospace;
-            font-size: 0.65rem;
+            font-size: 0.6rem;
             color: var(--text-secondary);
             transition: all 0.2s ease;
         }
@@ -513,67 +530,69 @@
             color: #1a1a1a;
             box-shadow: 0 0 15px rgba(255, 149, 0, 0.5);
             transform: scale(1.1);
+            z-index: 2;
         }
 
         /* Tempo Control */
         .tempo-control {
             position: fixed;
-            left: 20px;
-            bottom: 20px;
+            left: 15px;
+            bottom: 15px;
             z-index: 20;
-            width: 200px;
+            width: 180px;
         }
 
         .tempo-content {
-            padding: 16px;
+            padding: 12px;
         }
 
         .tempo-slider {
             width: 100%;
             -webkit-appearance: none;
-            height: 6px;
-            border-radius: 3px;
+            height: 4px;
+            border-radius: 2px;
             background: rgba(255, 255, 255, 0.1);
             outline: none;
-            margin: 12px 0;
+            margin: 10px 0;
         }
 
         .tempo-slider::-webkit-slider-thumb {
             -webkit-appearance: none;
-            width: 18px;
-            height: 18px;
+            width: 14px;
+            height: 14px;
             border-radius: 50%;
             background: var(--amber);
             cursor: pointer;
-            box-shadow: 0 0 10px rgba(255, 149, 0, 0.5);
+            box-shadow: 0 0 8px rgba(255, 149, 0, 0.5);
         }
 
         .tempo-value {
             font-family: 'JetBrains Mono', monospace;
-            font-size: 0.9rem;
+            font-size: 0.8rem;
             color: var(--amber);
             text-align: center;
         }
 
-        /* Instructions */
+        /* Instructions - placed below workspace */
         .instructions {
             position: fixed;
-            top: 80px;
+            top: calc(38% + 120px); /* position below workspace; 120px offset to account for workspace height and spacing */
             left: 50%;
             transform: translateX(-50%);
             z-index: 20;
             text-align: center;
             color: var(--text-secondary);
-            font-size: 0.75rem;
-            opacity: 0.8;
+            font-size: 0.7rem;
+            opacity: 0.9;
+            pointer-events: none;
         }
 
         .instructions kbd {
             background: rgba(255, 255, 255, 0.1);
-            padding: 2px 8px;
+            padding: 2px 6px;
             border-radius: 4px;
             font-family: 'JetBrains Mono', monospace;
-            font-size: 0.65rem;
+            font-size: 0.6rem;
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
@@ -615,25 +634,25 @@
         /* Status indicator */
         .status {
             position: fixed;
-            top: 20px;
-            right: 20px;
+            top: 15px;
+            right: 15px;
             z-index: 20;
             display: flex;
             align-items: center;
             gap: 8px;
-            padding: 8px 16px;
+            padding: 6px 12px;
             background: var(--panel-bg);
             backdrop-filter: blur(20px);
             border: 1px solid var(--panel-border);
             border-radius: 20px;
-            font-size: 0.7rem;
+            font-size: 0.65rem;
             text-transform: uppercase;
             letter-spacing: 0.05em;
         }
 
         .status-dot {
-            width: 8px;
-            height: 8px;
+            width: 6px;
+            height: 6px;
             border-radius: 50%;
             background: var(--success);
             box-shadow: 0 0 8px var(--success);
@@ -703,10 +722,58 @@
             transform: scale(1.05) rotate(2deg);
             box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
         }
+
+        /* ==================== MEDIA QUERIES ==================== */
+        @media (max-width: 1400px) {
+            .block-palette {
+                width: 200px;
+                left: 10px;
+            }
+            .code-preview {
+                width: 220px;
+                right: 10px;
+                max-height: 35vh;
+            }
+            .var-display {
+                width: 220px;
+                right: 10px;
+                bottom: 10px;
+            }
+            /* Adjusted workspace for laptops */
+            .workspace {
+                top: 80px; 
+                width: 500px;
+            }
+            .tempo-control {
+                left: 10px;
+                bottom: 10px;
+                width: 160px;
+            }
+            /* bring instructions closer on narrower screens */
+            .instructions {
+                top: calc(80px + 80px); /* header + workspace fallback */
+            }
+            .header { top: 10px; }
+            .status { top: 10px; right: 10px; }
+        }
+
+        @media (max-width: 1200px) {
+            .block-palette, .code-preview, .var-display, .tempo-control {
+                transform: scale(0.95);
+            }
+            .block-palette { transform-origin: left center; }
+            .code-preview { transform-origin: right center; }
+            .var-display { transform-origin: bottom right; }
+            .tempo-control { transform-origin: bottom left; }
+            
+            .workspace {
+                width: 450px;
+                max-width: 80vw;
+            }
+        }
     </style>
 </head>
 <body>
-    <!-- Loading Screen -->
     <div class="loading" id="loading">
         <h1>Loop Studio</h1>
         <div class="loading-bar">
@@ -714,30 +781,22 @@
         </div>
     </div>
 
-    <!-- 3D Canvas -->
     <div id="canvas-container"></div>
 
-    <!-- Crosshair -->
     <div class="crosshair"></div>
 
-    <!-- Header -->
     <div class="header">
         <h1>Loop Studio</h1>
         <p>Learn For Loops Through Music Production</p>
     </div>
 
-    <!-- Instructions -->
-    <div class="instructions">
-        <kbd>Click & Drag</kbd> to look around • <kbd>Click Pads</kbd> to hear sounds • Drag blocks to build your loop
-    </div>
+    <!-- instructions moved below workspace -->
 
-    <!-- Status -->
     <div class="status" id="status">
         <div class="status-dot"></div>
         <span>Ready</span>
     </div>
 
-    <!-- Block Palette -->
     <div class="block-palette panel">
         <div class="panel-header">
             <div class="dot"></div>
@@ -776,7 +835,6 @@
         </div>
     </div>
 
-    <!-- Workspace -->
     <div class="workspace panel">
         <div class="panel-header">
             <div class="dot"></div>
@@ -796,7 +854,10 @@
         </div>
     </div>
 
-    <!-- Code Preview -->
+    <div class="instructions">
+        <kbd>Click & Drag</kbd> to look around • <kbd>Click Pads</kbd> to hear sounds • Drag blocks to build your loop
+    </div>
+
     <div class="code-preview panel">
         <div class="panel-header">
             <div class="dot"></div>
@@ -806,7 +867,6 @@
 <span class="comment">// as you build with blocks</span></code></pre>
     </div>
 
-    <!-- Variable Display -->
     <div class="var-display panel">
         <div class="panel-header">
             <div class="dot"></div>
@@ -833,7 +893,6 @@
         </div>
     </div>
 
-    <!-- Tempo Control -->
     <div class="tempo-control panel">
         <div class="panel-header">
             <div class="dot"></div>
@@ -845,7 +904,6 @@
         </div>
     </div>
 
-    <!-- Pad Tooltip -->
     <div class="pad-tooltip" id="pad-tooltip">
         <div class="pad-index" id="tooltip-index">0</div>
         <div class="pad-label">drums[<span id="tooltip-array-index">0</span>]</div>
